@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as bs 
 
-class news:
+class News:
     def __init__(self):
         self.aaj_tak_url="https://www.aajtak.in/"
         self.ndtv_url="https://www.ndtv.com/"
@@ -62,5 +62,4 @@ class news:
         x["Breaking_news"]=self.data["aaj_tak"][0]["breaking_news"]
         x["news"]=self.data["aaj_tak"][-1]["major_news"]
         return x
-a=news()
-print(a.scrape_aaj_tak())
+

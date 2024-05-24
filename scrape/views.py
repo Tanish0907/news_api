@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from scraper import News
 
-def test(request):
-    return JsonResponse({"test":"abc"})
+def aajtak(request):
+    a=News()
+    return JsonResponse(a.scrape_aaj_tak())
 # Create your views here.
