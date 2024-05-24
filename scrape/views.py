@@ -64,9 +64,53 @@ class News:
         x["Breaking_news"]=self.data["aaj_tak"][0]["breaking_news"]
         x["news"]=self.data["aaj_tak"][-1]["major_news"]
         return x
+    def scrape_ndtv(self):
+        r=requests.get(self.ndtv_url).content
+        soup=bs(r,"lxml")
+        news1=soup.find("div",class_="vjl-row latest-stories-74").find_all("a")
+        news2=soup.find("div",class_="vjl-row vjl-row-hf1 mb-10 top-stories-8").find_all("a")
+        news3=soup.find("div",class_="vjl-row top-stories-8").find_all("a")
+        news4=soup.find("div",class_="vjl-row mb-25 topscroll-17").find_all("a")
+        news5=soup.find("ul",class_="Hrlst5_ul Hrlst5_num mb-10").find_all("a")
+        news6=soup.find("div",class_="vjl-sm-12 vjl-md-12 vjl-lg-12 vjl-xl-6 res_ls-ns_rt entertainment-4437").find_all("a")
+        news7=soup.find("div",class_="vjl-sm-12 vjl-md-12 vjl-lg-12 vjl-xl-6 res_ls-ns_lt Bqprime-4440").find_all("a")
+        news8=soup.find("div",class_="FtSeoHp_txt-wr").find_all("a")
+        news1.extend(news2)
+        news1.extend(news3)
+        news1.extend(news4)
+        news1.extend(news5)
+        news1.extend(news6)
+        news1.extend(news7)
+        news1.extend(news8)
+        news=[i.get("href") for i in news1 ]
+        for i in news:
+            if "mp4" in i:
+                news.pop(news.index(i))
+            else:
+                continue
+        news=set(news)
+        news=list(news)
+        def extract_news(link):
+            news={}
+            r=requests.get(link).content
+            soup=bs(r,"lxml")
+            try:
+                news["heading"]=soup.find("div",class_="sp-hd").find("h1").get_text()
+                news["sub-heading"]=soup.find("div",class_="sp-hd").find("h2").get_text()
+                news["article"]=[]
+                news["article"].append(soup.find("div",class_="sp-cn ins_storybody").find("b").get_text())
+                news["article"].extend([i.get_text() for i in soup.find("div",class_="sp-cn ins_storybody").find_all("p")])
+            except Exception as e:
+                pass
+            return news
+        news=[extract_news(i) for i in news]
+        return {"news":news}
 
 
 def aajtak(request):
     a=News()
     return JsonResponse(a.scrape_aaj_tak())
-# Create your views here.
+def ndtv(request):
+    a=News()
+    return JsonResponse(a.scrape_ndtv())
+
