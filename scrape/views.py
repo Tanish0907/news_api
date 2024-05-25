@@ -2,8 +2,10 @@ from django.shortcuts import render
 from django.http import JsonResponse
 import requests
 from bs4 import BeautifulSoup as bs 
-
-class News:
+from .models import News
+from django.views.decorators.csrf import csrf_exempt
+from pydantic import BaseModel
+class scrapeNews:
     def __init__(self):
         self.aaj_tak_url="https://www.aajtak.in/"
         self.ndtv_url="https://www.ndtv.com/"
@@ -50,8 +52,11 @@ class News:
                     news["sub-heading"]=soup.find("div",class_="sab-head-tranlate-sec").get_text()
                     news["article"]=soup.find("div",class_="story-with-main-sec").find_all("p",class_="text-align-justify")
                     news["article"]=[i.get_text() for i in news["article"]]
+
                 except Exception as e:
-                    return {}
+                    return news
+                entry=News(heading=news["heading"],subheading=news["sub-heading"],article=news["article"])
+                entry.save()
                 return news
             news_left=[extract_news(i) for i in news_left]
             news_mid=[extract_news(i) for i in news_mid]
@@ -92,6 +97,7 @@ class News:
         news=list(news)
         def extract_news(link):
             news={}
+            db_save=News()
             r=requests.get(link).content
             soup=bs(r,"lxml")
             try:
@@ -101,16 +107,31 @@ class News:
                 news["article"].append(soup.find("div",class_="sp-cn ins_storybody").find("b").get_text())
                 news["article"].extend([i.get_text() for i in soup.find("div",class_="sp-cn ins_storybody").find_all("p")])
             except Exception as e:
-                pass
+                return news
+            entry=News(heading=news["heading"],subheading=news["sub-heading"],article=news["article"])
+            entry.save()
             return news
         news=[extract_news(i) for i in news]
         return {"news":news}
-
+class postnews(BaseModel):
+    heading:str
+    subheading:str
+    article:str
 
 def aajtak(request):
-    a=News()
+    a=scrapeNews()
     return JsonResponse(a.scrape_aaj_tak())
 def ndtv(request):
-    a=News()
+    a=scrapeNews()
     return JsonResponse(a.scrape_ndtv())
+@csrf_exempt
+def post(request):
+    import json
+    if request.method=='POST':
+        news=request.body.decode("utf-8")
+        news=json.loads(news)
+        entry=News(heading=news["heading"],subheading=news["subheading"],article=news["article"])
+        entry.save()
+        return JsonResponse({"status":"object created"})
+
 
