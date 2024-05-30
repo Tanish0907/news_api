@@ -5,6 +5,13 @@ from bs4 import BeautifulSoup as bs
 from .models import News
 from django.views.decorators.csrf import csrf_exempt
 from pydantic import BaseModel
+import subprocess
+def translate(scentence):
+    cmd=["translate-cli", "-t" ,"en", scentence]
+    res=subprocess.check_output(cmd)
+    res=res.split(":")[1].split("\n")[0]
+    print(res)
+    return res
 class scrapeNews:
     def __init__(self):
         self.aaj_tak_url="https://www.aajtak.in/"
@@ -42,17 +49,24 @@ class scrapeNews:
             news_mid=[i.get("href") for i in news_mid]
             news_right=content.find("div",class_="story-listing").find_all("a")
             news_right=[i.get("href") for i in news_right]
+            
             def extract_news(link):
+                
                 news={}
                 article=requests.get(link).content
                 soup=bs(article,"lxml")
                 soup=soup.find("div",class_="content-area")
                 try:
-                    news["heading"]=soup.find("div",class_="story-heading").get_text()
-                    news["sub-heading"]=soup.find("div",class_="sab-head-tranlate-sec").get_text()
+                    news["heading"]=soup.find('div',class_='story-heading').get_text()
+                    try:
+                        news["heading"]=translate(news["heading"].encode("utf-8"))
+                    except Exception as e:
+                        print(e)
+                        pass
+                    news["sub-heading"]=soup.find('div',class_='sab-head-tranlate-sec').get_text()
                     news["article"]=soup.find("div",class_="story-with-main-sec").find_all("p",class_="text-align-justify")
                     news["article"]=[i.get_text() for i in news["article"]]
-
+                    
                 except Exception as e:
                     return news
                 entry=News(heading=news["heading"],subheading=news["sub-heading"],article=news["article"])
@@ -101,10 +115,10 @@ class scrapeNews:
             r=requests.get(link).content
             soup=bs(r,"lxml")
             try:
-                news["heading"]=soup.find("div",class_="sp-hd").find("h1").get_text()
-                news["sub-heading"]=soup.find("div",class_="sp-hd").find("h2").get_text()
+                news["heading"]=soup.find('div',class_='sp-hd').find('h1').get_text()
+                news["sub-heading"]=soup.find('div',class_='sp-hd').find('h2').get_text()
                 news["article"]=[]
-                news["article"].append(soup.find("div",class_="sp-cn ins_storybody").find("b").get_text())
+                news["article"].append(soup.find('div',class_='sp-cn ins_storybody').find('b').get_text())
                 news["article"].extend([i.get_text() for i in soup.find("div",class_="sp-cn ins_storybody").find_all("p")])
             except Exception as e:
                 return news
