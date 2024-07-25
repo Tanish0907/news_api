@@ -1,4 +1,3 @@
-Sure, here's the documentation for the `News-api` in a structured format:
 
 ---
 
